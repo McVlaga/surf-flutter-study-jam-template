@@ -15,9 +15,7 @@ void main() async {
         webKey: 'enter web key here',
       ),
     );
-  } catch (e) {
-    print(e);
-  }
+  } catch (e) {}
 
   runApp(const MyApp());
 }

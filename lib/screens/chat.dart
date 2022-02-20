@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:surf_practice_chat_flutter/data/chat/models/message.dart';
-import 'package:surf_practice_chat_flutter/data/chat/repository/firebase.dart';
+import 'package:surf_practice_chat_flutter/data/chat/models/user.dart';
 
 import 'package:surf_practice_chat_flutter/data/chat/repository/repository.dart';
 
@@ -82,14 +82,14 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class SendMessageBottomBar extends StatelessWidget {
-  SendMessageBottomBar({
+  const SendMessageBottomBar({
     Key? key,
     required this.onSendMessage,
     required this.controller,
   }) : super(key: key);
 
   final void Function() onSendMessage;
-  TextEditingController controller;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +103,7 @@ class SendMessageBottomBar extends StatelessWidget {
             color: Colors.grey.withOpacity(0.5),
             spreadRadius: 2,
             blurRadius: 5,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -112,14 +112,14 @@ class SendMessageBottomBar extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Message',
               ),
             ),
           ),
           IconButton(
             onPressed: onSendMessage,
-            icon: Icon(Icons.send),
+            icon: const Icon(Icons.send),
           ),
         ],
       ),
@@ -128,11 +128,12 @@ class SendMessageBottomBar extends StatelessWidget {
 }
 
 class MainAppBar extends StatelessWidget {
-  MainAppBar({required this.onRefresh, required this.controller, Key? key})
+  const MainAppBar(
+      {required this.onRefresh, required this.controller, Key? key})
       : super(key: key);
 
   final void Function() onRefresh;
-  TextEditingController controller;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +148,7 @@ class MainAppBar extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 border: InputBorder.none,
                 hintText: 'Enter nickname',
               ),
@@ -155,7 +156,7 @@ class MainAppBar extends StatelessWidget {
           ),
           IconButton(
             onPressed: onRefresh,
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
           ),
         ],
       ),
@@ -177,16 +178,22 @@ class MessagesListWidget extends StatelessWidget {
     return ListView.builder(
       reverse: true,
       itemCount: _messages.length,
-      itemExtent: 60,
       itemBuilder: (context, index) {
         final message = _messages[index];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.deepPurple,
-            child: Text(message.author.name[0]),
+        bool local = false;
+        if (message.author is ChatUserLocalDto) {
+          local = true;
+        }
+        return Container(
+          color: local ? Colors.deepPurple[50] : Colors.transparent,
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.deepPurple,
+              child: Text(message.author.name[0]),
+            ),
+            title: Text(message.author.name),
+            subtitle: Text(message.message),
           ),
-          title: Text(message.author.name),
-          subtitle: Text(message.message),
         );
       },
     );
