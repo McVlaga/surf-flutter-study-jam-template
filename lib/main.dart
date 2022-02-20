@@ -7,15 +7,18 @@ import 'package:surf_practice_chat_flutter/screens/chat.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform(
+        androidKey: 'AIzaSyCXU5f25S_SUeVv7cAzoeF373kHk4Hv2dE',
+        iosKey: 'AIzaSyAjvNoe31ZMSakjKFOkhbrZBsj3RyW6plo',
+        webKey: 'enter web key here',
+      ),
+    );
+  } catch (e) {
+    print(e);
+  }
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform(
-      androidKey: 'enter android key here',
-      iosKey: 'enter ios key here',
-      webKey: 'enter web key here',
-    ),
-  );
-  
   runApp(const MyApp());
 }
 

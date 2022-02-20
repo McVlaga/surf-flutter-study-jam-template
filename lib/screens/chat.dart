@@ -20,6 +20,8 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   bool loading = true;
   List<ChatMessageDto> _messages = [];
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
 
   @override
   void initState() {
@@ -43,23 +45,94 @@ class _ChatScreenState extends State<ChatScreen> {
     _fetchMessages();
   }
 
+  Future<void> _sendMessage() async {
+    loading = true;
+    setState(() {});
+    _messages = await widget.chatRepository
+        .sendMessage(_nameController.text, _messageController.text);
+    _messageController.text = '';
+    loading = false;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        flexibleSpace: MainAppBar(onRefresh: _refreshPage),
+        flexibleSpace:
+            MainAppBar(onRefresh: _refreshPage, controller: _nameController),
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : MessagesListWidget(messages: _messages),
+      body: Column(
+        children: [
+          Expanded(
+            child: loading
+                ? const Center(child: CircularProgressIndicator())
+                : MessagesListWidget(
+                    messages: _messages,
+                  ),
+          ),
+          SendMessageBottomBar(
+            controller: _messageController,
+            onSendMessage: _sendMessage,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SendMessageBottomBar extends StatelessWidget {
+  SendMessageBottomBar({
+    Key? key,
+    required this.onSendMessage,
+    required this.controller,
+  }) : super(key: key);
+
+  final void Function() onSendMessage;
+  TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(left: 24, right: 16, bottom: 40),
+      alignment: Alignment.topCenter,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.5),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: 'Message',
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onSendMessage,
+            icon: Icon(Icons.send),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class MainAppBar extends StatelessWidget {
-  const MainAppBar({required this.onRefresh, Key? key}) : super(key: key);
+  MainAppBar({required this.onRefresh, required this.controller, Key? key})
+      : super(key: key);
 
   final void Function() onRefresh;
+  TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -73,13 +146,17 @@ class MainAppBar extends StatelessWidget {
         children: [
           Expanded(
             child: TextField(
+              controller: controller,
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: 'Enter nickname',
               ),
             ),
           ),
-          IconButton(onPressed: onRefresh, icon: Icon(Icons.refresh))
+          IconButton(
+            onPressed: onRefresh,
+            icon: Icon(Icons.refresh),
+          ),
         ],
       ),
     );
@@ -98,6 +175,7 @@ class MessagesListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      reverse: true,
       itemCount: _messages.length,
       itemExtent: 60,
       itemBuilder: (context, index) {
