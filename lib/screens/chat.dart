@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:surf_practice_chat_flutter/data/chat/models/message.dart';
+import 'package:surf_practice_chat_flutter/data/chat/models/messages_list_model.dart';
 import 'package:surf_practice_chat_flutter/data/chat/models/user.dart';
-
-import 'package:surf_practice_chat_flutter/data/chat/repository/repository.dart';
 
 /// Chat screen templete. This is your starting point.
 class ChatScreen extends StatefulWidget {
-  final ChatRepository chatRepository;
+  final MessagesListModel model;
 
   const ChatScreen({
     Key? key,
-    required this.chatRepository,
+    required this.model,
   }) : super(key: key);
 
   @override
@@ -18,53 +18,22 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  bool loading = true;
-  List<ChatMessageDto> _messages = [];
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _init();
+    _getMessages();
   }
 
-  void _init() {
-    _fetchMessages();
+  void _getMessages() {
+    widget.model.fetchMessages();
   }
 
-  Future<void> _fetchMessages() async {
-    try {
-      _messages = await widget.chatRepository.messages;
-    } catch (e) {
-      _showErrorSnackBar(e.toString());
-    }
-    loading = false;
-    setState(() {});
-  }
-
-  void _refreshPage() {
-    loading = true;
-    setState(() {});
-    _fetchMessages();
-  }
-
-  Future<void> _sendMessage() async {
-    loading = true;
-    setState(() {});
-    try {
-      _messages = await widget.chatRepository
-          .sendMessage(_nameController.text, _messageController.text);
-      _messageController.text = '';
-    } on InvalidMessageException catch (e) {
-      _showErrorSnackBar(e.message);
-    } on InvalidNameException catch (e) {
-      _showErrorSnackBar(e.message);
-    } catch (e) {
-      _showErrorSnackBar(e.toString());
-    }
-    loading = false;
-    setState(() {});
+  void _sendMessage() {
+    widget.model.sendMessage(_nameController.text, _messageController.text);
+    _messageController.text = '';
   }
 
   void _showErrorSnackBar(String error) {
@@ -76,24 +45,109 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        flexibleSpace:
-            MainAppBar(onRefresh: _refreshPage, controller: _nameController),
+    return ChangeNotifierProvider.value(
+        value: widget.model,
+        builder: (context, model) {
+          return Scaffold(
+            appBar: AppBar(
+              flexibleSpace: MainAppBar(
+                controller: _nameController,
+                onRefresh: _getMessages,
+              ),
+            ),
+            body: Column(
+              children: [
+                const MessagesListWidget(),
+                SendMessageBottomBar(
+                  controller: _messageController,
+                  onSendMessage: _sendMessage,
+                ),
+              ],
+            ),
+          );
+        });
+  }
+}
+
+class MainAppBar extends StatelessWidget {
+  const MainAppBar(
+      {required this.onRefresh, required this.controller, Key? key})
+      : super(key: key);
+
+  final void Function() onRefresh;
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: MediaQuery.of(context).viewPadding.top,
       ),
-      body: Column(
+      child: Row(
         children: [
           Expanded(
-            child: loading
-                ? const Center(child: CircularProgressIndicator())
-                : MessagesListWidget(messages: _messages),
+            child: TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: 'Enter nickname',
+              ),
+            ),
           ),
-          SendMessageBottomBar(
-            controller: _messageController,
-            onSendMessage: _sendMessage,
+          IconButton(
+            onPressed: onRefresh,
+            icon: const Icon(Icons.refresh),
           ),
         ],
       ),
+    );
+  }
+}
+
+class MessagesListWidget extends StatelessWidget {
+  const MessagesListWidget({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: FutureBuilder(
+          future: context.read<MessagesListModel>().fetchMessages(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.connectionState == ConnectionState.done) {
+              return Consumer<MessagesListModel>(builder: (context, model, _) {
+                List<ChatMessageDto> messages = model.messages;
+                return ListView.builder(
+                  reverse: true,
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    bool local = false;
+                    if (message.author is ChatUserLocalDto) {
+                      local = true;
+                    }
+                    return Container(
+                      color: local ? Colors.deepPurple[50] : Colors.transparent,
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.deepPurple,
+                          child: Text(message.author.name[0]),
+                        ),
+                        title: Text(message.author.name),
+                        subtitle: Text(message.message),
+                      ),
+                    );
+                  },
+                );
+              });
+            }
+            return SizedBox.shrink();
+          }),
     );
   }
 }
@@ -140,79 +194,6 @@ class SendMessageBottomBar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class MainAppBar extends StatelessWidget {
-  const MainAppBar(
-      {required this.onRefresh, required this.controller, Key? key})
-      : super(key: key);
-
-  final void Function() onRefresh;
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: MediaQuery.of(context).viewPadding.top,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Enter nickname',
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: onRefresh,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class MessagesListWidget extends StatelessWidget {
-  const MessagesListWidget({
-    Key? key,
-    required List<ChatMessageDto> messages,
-  })  : _messages = messages,
-        super(key: key);
-
-  final List<ChatMessageDto> _messages;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      reverse: true,
-      itemCount: _messages.length,
-      itemBuilder: (context, index) {
-        final message = _messages[index];
-        bool local = false;
-        if (message.author is ChatUserLocalDto) {
-          local = true;
-        }
-        return Container(
-          color: local ? Colors.deepPurple[50] : Colors.transparent,
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.deepPurple,
-              child: Text(message.author.name[0]),
-            ),
-            title: Text(message.author.name),
-            subtitle: Text(message.message),
-          ),
-        );
-      },
     );
   }
 }
