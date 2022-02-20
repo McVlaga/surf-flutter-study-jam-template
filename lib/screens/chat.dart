@@ -34,7 +34,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _fetchMessages() async {
-    _messages = await widget.chatRepository.messages;
+    try {
+      _messages = await widget.chatRepository.messages;
+    } catch (e) {
+      _showErrorSnackBar(e.toString());
+    }
     loading = false;
     setState(() {});
   }
@@ -48,11 +52,26 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _sendMessage() async {
     loading = true;
     setState(() {});
-    _messages = await widget.chatRepository
-        .sendMessage(_nameController.text, _messageController.text);
-    _messageController.text = '';
+    try {
+      _messages = await widget.chatRepository
+          .sendMessage(_nameController.text, _messageController.text);
+      _messageController.text = '';
+    } on InvalidMessageException catch (e) {
+      _showErrorSnackBar(e.message);
+    } on InvalidNameException catch (e) {
+      _showErrorSnackBar(e.message);
+    } catch (e) {
+      _showErrorSnackBar(e.toString());
+    }
     loading = false;
     setState(() {});
+  }
+
+  void _showErrorSnackBar(String error) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      duration: const Duration(seconds: 2),
+      content: Text(error),
+    ));
   }
 
   @override
@@ -67,9 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: loading
                 ? const Center(child: CircularProgressIndicator())
-                : MessagesListWidget(
-                    messages: _messages,
-                  ),
+                : MessagesListWidget(messages: _messages),
           ),
           SendMessageBottomBar(
             controller: _messageController,

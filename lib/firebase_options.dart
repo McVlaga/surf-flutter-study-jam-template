@@ -46,20 +46,20 @@ class DefaultFirebaseOptions {
 
   static FirebaseOptions android(String apiKey) => FirebaseOptions(
         apiKey: apiKey,
-        appId: '1:733105866417:android:3c79422507496dca42c490',
-        messagingSenderId: '733105866417',
-        projectId: 'flutter-study-jam-chat',
-        storageBucket: 'flutter-study-jam-chat.appspot.com',
+        appId: '1:495369196783:android:7f0925fb1b46a0206b771a',
+        messagingSenderId: '495369196783',
+        projectId: 'flutter-study-jam-chat-f6f94',
+        storageBucket: 'flutter-study-jam-chat-f6f94.appspot.com',
       );
 
   static FirebaseOptions ios(String apiKey) => FirebaseOptions(
         apiKey: apiKey,
-        appId: '1:733105866417:ios:c7bd9f729a6c6aeb42c490',
-        messagingSenderId: '733105866417',
-        projectId: 'flutter-study-jam-chat',
-        storageBucket: 'flutter-study-jam-chat.appspot.com',
+        appId: '1:495369196783:ios:c2e9c649906e79166b771a',
+        messagingSenderId: '495369196783',
+        projectId: 'flutter-study-jam-chat-f6f94',
+        storageBucket: 'flutter-study-jam-chat-f6f94.appspot.com',
         iosClientId:
-            '733105866417-b913tlsk16lvctktgpia2nrejljo91f3.apps.googleusercontent.com',
+            '495369196783-qj1a0ko1bmn2p0br6v4hn2dgs7nif9la.apps.googleusercontent.com',
         iosBundleId: 'com.example.surfPracticeChatFlutter',
       );
 }
